@@ -1,21 +1,39 @@
 import discord
 from discord.ext import commands
-import os, threading
+import os, random, threading
 from flask import Flask, request, jsonify
 
 # ================= НАСТРОЙКИ =================
 TOKEN = os.getenv("DISCORD_TOKEN")
 SECRET = "2122428Matros"
 
-CHANNEL_ID = 1342349362600218624
+CHANNEL_ID = 1458885875692732438
 
 РОЛЬ_НА_ПРОВЕРКЕ = 1474320899598581791
 РОЛЬ_ОДОБРЕНО = 1457319043315929267
 
+ПИНГ_КАДРОВ = "<@&123456789012345678>"  # ← вставь роль кадров
+
+# ================= СООБЩЕНИЯ =================
+ЛС_ПОЛУЧЕНО = [
+    "Ваша заявка принята и передана на рассмотрение.",
+]
+
+ЛС_ОДОБРЕНО = [
+    "Вы приняты. Ожидайте дальнейших инструкций.",
+]
+
+ЛС_ОТКАЗ = [
+    "В приёме отказано.",
+]
+
+ЛС_УТОЧНИТЬ = [
+    "Требуется уточнение данных. Ответьте на сообщение.",
+]
+
 # ================= СТАТУСЫ =================
 СТАТУСЫ = {
     "WAIT": ("🟣 На рассмотрении", 0x5865F2),
-    "PROCESS": ("🟡 В обработке", 0xF1C40F),
     "OK": ("🟢 Принят", 0x2ECC71),
     "NO": ("🔴 Отказ", 0xE74C3C),
     "CLARIFY": ("🔵 Требуется уточнение", 0x3498DB),
@@ -74,21 +92,37 @@ class Кнопки(discord.ui.View):
     @discord.ui.button(label="Принять", style=discord.ButtonStyle.success)
     async def approve(self, interaction: discord.Interaction, button):
         member = interaction.guild.get_member(self.user.id)
+
         if member:
             role = interaction.guild.get_role(РОЛЬ_ОДОБРЕНО)
             if role:
                 await member.add_roles(role)
+
+            try:
+                await member.send(random.choice(ЛС_ОДОБРЕНО))
+            except:
+                pass
 
         await interaction.response.defer()
         await self.set_status(interaction, "OK", финал=True)
 
     @discord.ui.button(label="Отказать", style=discord.ButtonStyle.danger)
     async def decline(self, interaction: discord.Interaction, button):
+        try:
+            await self.user.send(random.choice(ЛС_ОТКАЗ))
+        except:
+            pass
+
         await interaction.response.defer()
         await self.set_status(interaction, "NO", финал=True)
 
     @discord.ui.button(label="Уточнить", style=discord.ButtonStyle.secondary)
     async def clarify(self, interaction: discord.Interaction, button):
+        try:
+            await self.user.send(random.choice(ЛС_УТОЧНИТЬ))
+        except:
+            pass
+
         await interaction.response.defer()
         await self.set_status(interaction, "CLARIFY", финал=False)
 
@@ -117,7 +151,11 @@ async def обработать_заявку(discord_id, author_name, fields):
         embed.add_field(name=f.get("name"), value=f.get("value"), inline=False)
 
     view = Кнопки(user)
-    msg = await channel.send(embed=embed, view=view)
+    msg = await channel.send(
+        content=f"{ПИНГ_КАДРОВ} новая заявка",
+        embed=embed,
+        view=view
+    )
 
     view.message = msg
 
@@ -128,6 +166,12 @@ async def обработать_заявку(discord_id, author_name, fields):
         role = guild.get_role(РОЛЬ_НА_ПРОВЕРКЕ)
         if role:
             await member.add_roles(role)
+
+    # ЛС при получении
+    try:
+        await user.send(random.choice(ЛС_ПОЛУЧЕНО))
+    except:
+        pass
 
 # ================= RUN =================
 def run_flask():
