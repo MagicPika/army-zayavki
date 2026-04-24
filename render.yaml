@@ -2,14 +2,12 @@
 version: "1"
 services:
 - type: web
-  name: lenochka-bot
+  name: army-zayavki
   runtime: python
-  repo: https://github.com/MagicPika/my-leno4ka-bot
+  repo: https://github.com/MagicPika/army-zayavki
   plan: free
   envVars:
   - key: DISCORD_TOKEN
-    sync: false
-  - key: ADMIN_ROLE_ID
     sync: false
   - key: PYTHON_VERSION
     sync: false
